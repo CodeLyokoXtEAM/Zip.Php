@@ -119,17 +119,14 @@ if($zip->open($Zip_path) == 'TRUE') {
 		};
 	};
 
+	function ZipAddFileFolders($zip_p,$file_p,$real_p) {
+		if (is_dir($real_p)) {
+			echo "dir";
 
-	if ($cmd=='a_files') {
-		foreach ($a_files_path as $key => $value) {
-			if (!is_dir($value)) {
-				$zip->addFile($value,$key);
-			}
-			else {
-				echo "dir";
-			};
+		}
+		else {
+			$zip_p->addFile($real_p,$file_p);
 		};
-
 	};
 
 	function ZipDeleteFileFolder($zip_p,$indx,$path) {//delete file or folder using ZipDeleteFileFolder('Zip Path','File/Folder index','File/Folder path without including name that wanted to delete')
@@ -142,8 +139,6 @@ if($zip->open($Zip_path) == 'TRUE') {
 			};
 
 	};
-
-
 
 	function ZipRenameFile($zip_p,$index,$newname) {//rename using Ziprenamefile('Zip Path','File index', 'New File Name')
 		if($zip_p->renameIndex($index,$newname)) {
@@ -174,8 +169,18 @@ if($zip->open($Zip_path) == 'TRUE') {
 				echo ZipDeleteFileFolder($zip,$value,$key);
 			};
 			break;
+		case 'rname':
+			foreach ($index as $value => $key) {
+				echo ZipRenameFile($zip,$value,$rname);
+			};
+			break;
+
+		case 'a_files':
+			foreach ($a_files_path as $key => $value) {
+				echo ZipAddFileFolders($zip,$key,$value)
+			};
+			break;
 	};
-	
 
 }
 else {
@@ -218,7 +223,6 @@ else {
 	}
 	die( 'ZipArchive_Error:'.$ErrMsg);
 };
-
 
 $zip->close();
 
