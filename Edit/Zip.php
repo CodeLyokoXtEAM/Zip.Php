@@ -3,11 +3,10 @@
 //request data
 $Zip_path='files.zip';//zip file path
 $pass="";//user password. Its still not working correctly
-$cmd='del';//'get','rname','del','open','c_dir','a_files'
-$index='2' ;//calling index
-$index_name="";//calling index file or folder name
+$cmd='get';//'get','rname','del','open','c_dir','a_files'
+$index=array('8'=>'New folder/New folder/') ;//calling indexs as array(as 'index' => 'selected index file or folder path')
 $c_dir_path='.trash/159';//path to create folder includng that wanted to create folder's name
-$a_files_path = array('gsd/gsgd/1.php'=>'C:\wamp64\www\files\1.php' , 'gsd\gsd\zip.php'=>'C:\wamp64\www\files\zip.php');//give you wanted to add files path list to zip (as path inside zip => real path to file)
+$a_files_path = array('New folder/'=>'C:\wamp64\www\files\New folder');//give you wanted to add files path list to zip (as path inside zip => real path to file)
 $rname='ee';//new file name for rename & folder rename immposible directly
 
 $zip = new ZipArchive;
@@ -29,6 +28,7 @@ if($zip->open($Zip_path) == 'TRUE') {
 		fclose($fp);
 		file_put_contents('t',$contents);
 		$filedetil=explode("/",strtolower($zip->statIndex($index)['name']));
+
 		$filedetil=explode(".",end($filedetil));
 
 		$mime_types = array(
@@ -94,7 +94,7 @@ if($zip->open($Zip_path) == 'TRUE') {
 		};
 
 	header("Content-type: ".$mime);
-	echo $contents;
+	echo ($contents);
 
 	//$file=fopen(end($filedetil),"w");
 	//$temp = tmpfile();
@@ -104,7 +104,7 @@ if($zip->open($Zip_path) == 'TRUE') {
 	//fclose($file);
 
 
-};
+	};
 
 	if ($cmd=='get') {
 		for ($i=0; !empty($zip->statIndex($i)['name']); $i++) {//generating list (including identification index, name or path, size, crc, mtime, compares_Size, comp_method)of folders and files inside the zip
@@ -116,57 +116,66 @@ if($zip->open($Zip_path) == 'TRUE') {
 				echo "Filepath: ";
 			};
 			echo $zip->statIndex($i)['name']." | Size: ".$zip->statIndex($i)['size']." bytes"." | crc: ".$zip->statIndex($i)['crc']." | mtime: ".$zip->statIndex($i)['mtime']." | compares_Size: ".$zip->statIndex($i)['comp_size']." | comp_method: ".$zip->statIndex($i)['comp_method']."<br>";
-			};
-		};
-	
-	if ($cmd=='rname') {//rename using index given file rname
-		if($zip->renameIndex($index,$rname))	{
-			echo "rname_ok";
-		}
-		else {
-			echo "rname_fail";
 		};
 	};
-	
-	if ($cmd=='del') {//delete file using index
-		$deleted=$zip->statIndex($index)['name'];
-		if(substr($deleted, -1)=='/'){
-			$type="dir";
-		} 
-		else {
-			$type="file";
-		};
-		
-		if($zip->deleteIndex($index)) {
-			echo $type."_del";
-		}
-		else {
-			echo $type."_fail";
-		};
-		
-		for ($i=0; !empty($zip->statIndex($i)['name']); $i++) {
-			
-		};
-			
-	};
-	
-	if ($cmd=='c_dir') {//Create dir inside zip using $c_dir_path
-		if($zip->addEmptyDir($c_dir_path)) {
-			echo 'c_dir_ok';
-		} 
-		else {
-			echo 'c_dir_fail';
-		};
-	};
-	
+
+
 	if ($cmd=='a_files') {
 		foreach ($a_files_path as $key => $value) {
-			$zip->addFile($value,$key);
+			if (!is_dir($value)) {
+				$zip->addFile($value,$key);
+			}
+			else {
+				echo "dir";
+			};
 		};
 
 	};
-		
-		
+
+	function ZipDeleteFileFolder($zip_p,$indx,$path) {//delete file or folder using ZipDeleteFileFolder('Zip Path','File/Folder index','File/Folder path without including name that wanted to delete')
+			if ($zip_p->deleteIndex($indx)) {
+				ZipCreateDir($zip_p,$path);
+				return ('ok_del');
+			}
+			else {
+				return ('ok_fail');
+			};
+
+	};
+
+
+
+	function ZipRenameFile($zip_p,$index,$newname) {//rename using Ziprenamefile('Zip Path','File index', 'New File Name')
+		if($zip_p->renameIndex($index,$newname)) {
+			return ('rname_ok');
+		}
+		else {
+			return ('rname_fail');
+		};
+	};
+
+	function ZipCreateDir($zip_p,$dir_path) {//Create dir inside zip using ZipCreateDir('Zip Path','Folder Path')
+		if($zip_p->addEmptyDir($dir_path)) {
+			return('c_dir_ok');
+		} 
+		else {
+			return ('c_dir_fail');
+		};
+
+	};
+
+	switch($cmd) {
+		case 'c_dir':
+			echo ZipCreateDir($zip,$c_dir_path);
+			break;
+
+		case 'del':
+			foreach ($index as $value => $key) {
+				echo ZipDeleteFileFolder($zip,$value,$key);
+			};
+			break;
+	};
+	
 
 }
 else {
