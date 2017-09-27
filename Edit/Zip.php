@@ -134,13 +134,14 @@ if($zip->open($Zip_path) == 'TRUE') {
 
 
 	function ZipDeleteFileFolder($zip_p,$indx,$path) {//delete file or folder using ZipDeleteFileFolder('Zip array','File/Folder index','File/Folder path including name that wanted to delete')
-
+		$sus_sub=0;
+		$sus_selected = '0'
 		if (is_numeric($indx)) {
 			if ($zip_p->deleteIndex($indx)) {
-				$sus = '1';
+				$sus_selected= '1';
 				}
 				else {
-					$sus = '0';
+					$sus_selected = '0';
 				};			
 			};
 			if(pathinfo($path,PATHINFO_DIRNAME) || chr(92)) {
@@ -153,9 +154,19 @@ if($zip->open($Zip_path) == 'TRUE') {
 					};
 				};
 				for ($i=0; !empty($index_list[$i]); $i++) {
-					$zip_p->deleteIndex($index_list[$i]);
+					if($zip_p->deleteIndex($index_list[$i])) {
+						$sus_sub=1;
+					}
+					else {
+						$sus_sub=0;
+					};
 				};
 			};
+		if($sus_sub=='1' or $sus_sub== '1'){
+			return ('ok_del');
+		else {
+			retun('fail_del')';
+		};
 	};
 
 	function ZipRenameFile($zip_p,$index,$newname) {//rename using Ziprenamefile('Zip array,'File index', 'New File Name')
