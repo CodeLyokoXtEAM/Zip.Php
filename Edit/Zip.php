@@ -2,11 +2,11 @@
 
 //request data
 $Zip_path='files.zip';//zip file path
-$pass="";//user password. Its still not working correctly
+$pass='';//user password. Its still not working correctly
 $cmd='get';//'get','rname','del','open','c_dir','a_files'
-$index=array('8'=>'New folder/New folder/') ;//calling indexs as array(as 'index' => 'selected index file or folder path')
+$index=array('null' => 'files/New folder/') ;//calling indexs as array(as 'index' => 'selected index file or folder path including name that selected') if it not define as index leave it 'null'
 $c_dir_path='.trash/159';//path to create folder includng that wanted to create folder's name
-$a_files_path = array('New folder/'=>'C:\wamp64\www\files\New folder');//give you wanted to add files path list to zip (as path inside zip => real path to file)
+$a_files_path = array('New folder/'=>'C:\wamp64\www\files\New folder');//give you wanted to add files or folders path list to zip (as path inside zip => real path to file)
 $rname='ee';//new file name for rename & folder rename immposible directly
 
 $zip = new ZipArchive;
@@ -19,7 +19,7 @@ if($zip->open($Zip_path) == 'TRUE') {
 
 		$contents='';
 		$fp = $zip->getStream($zip->statIndex($index)['name']);
-		if(!$fp) exit("failed\n");
+		if(!$fp) exit('failed\n');
 
 		while (!feof($fp)) {
 			$contents .= fread($fp, 2);
@@ -27,9 +27,9 @@ if($zip->open($Zip_path) == 'TRUE') {
 
 		fclose($fp);
 		file_put_contents('t',$contents);
-		$filedetil=explode("/",strtolower($zip->statIndex($index)['name']));
+		$filedetil=explode('/',strtolower($zip->statIndex($index)['name']));
 
-		$filedetil=explode(".",end($filedetil));
+		$filedetil=explode('.',end($filedetil));
 
 		$mime_types = array(
 			'txt' => 'text/plain',
@@ -93,35 +93,37 @@ if($zip->open($Zip_path) == 'TRUE') {
 			$mime= 'application/octet-stream';
 		};
 
-	header("Content-type: ".$mime);
+	header('Content-type: '.$mime);
 	echo ($contents);
 
-	//$file=fopen(end($filedetil),"w");
+	//$file=fopen(end($filedetil),'w');
 	//$temp = tmpfile();
 	//fwrite($temp ,$contents);
 	//fseek($temp,0);
 	//echo fread($temp,1024);
 	//fclose($file);
 
-
 	};
 
 	if ($cmd=='get') {
 		for ($i=0; !empty($zip->statIndex($i)['name']); $i++) {//generating list (including identification index, name or path, size, crc, mtime, compares_Size, comp_method)of folders and files inside the zip
-			echo "index: ".$i." | ";
+			echo 'index: '.$i.' | ';
 			if(substr($zip->statIndex($i)['name'], -1)=='/') {
-				echo "dirpath: ";
+				echo 'dirpath: ';
 			} 
 			else {
-				echo "Filepath: ";
+				echo 'Filepath: ';
 			};
-			echo $zip->statIndex($i)['name']." | Size: ".$zip->statIndex($i)['size']." bytes"." | crc: ".$zip->statIndex($i)['crc']." | mtime: ".$zip->statIndex($i)['mtime']." | compares_Size: ".$zip->statIndex($i)['comp_size']." | comp_method: ".$zip->statIndex($i)['comp_method']."<br>";
+			echo $zip->statIndex($i)['name'].' | Size: '.$zip->statIndex($i)['size'].' bytes'.' | crc: '.$zip->statIndex($i)['crc'].' | mtime: '.$zip->statIndex($i)['mtime'].' | compares_Size: '.$zip->statIndex($i)['comp_size'].' | comp_method: '.$zip->statIndex($i)['comp_method'].'<br>';
 		};
 	};
 
+
+
 	function ZipAddFileFolders($zip_p,$file_p,$real_p) {
 		if (is_dir($real_p)) {
-			echo "dir";
+			print_r(scandir($real_p));
+
 
 		}
 		else {
@@ -129,18 +131,34 @@ if($zip->open($Zip_path) == 'TRUE') {
 		};
 	};
 
-	function ZipDeleteFileFolder($zip_p,$indx,$path) {//delete file or folder using ZipDeleteFileFolder('Zip Path','File/Folder index','File/Folder path without including name that wanted to delete')
-			if ($zip_p->deleteIndex($indx)) {
-				ZipCreateDir($zip_p,$path);
-				return ('ok_del');
-			}
-			else {
-				return ('ok_fail');
-			};
 
+
+	function ZipDeleteFileFolder($zip_p,$indx,$path) {//delete file or folder using ZipDeleteFileFolder('Zip array','File/Folder index','File/Folder path including name that wanted to delete')
+
+		if (is_numeric($indx)) {
+			if ($zip_p->deleteIndex($indx)) {
+				$sus = '1';
+				}
+				else {
+					$sus = '0';
+				};			
+			};
+			if(pathinfo($path,PATHINFO_DIRNAME) || chr(92)) {
+				ZipCreateDir($zip_p,pathinfo($path,PATHINFO_DIRNAME));
+			};
+			if (is_dir($path)) {
+				for ($i=0; !empty($zip_p->statIndex($i)['name']); $i++) {
+					if (strpos($zip_p->statIndex($i)['name'],$path) !== false) {
+						$index_list[]=$i;
+					};
+				};
+				for ($i=0; !empty($index_list[$i]); $i++) {
+					$zip_p->deleteIndex($index_list[$i]);
+				};
+			};
 	};
 
-	function ZipRenameFile($zip_p,$index,$newname) {//rename using Ziprenamefile('Zip Path','File index', 'New File Name')
+	function ZipRenameFile($zip_p,$index,$newname) {//rename using Ziprenamefile('Zip array,'File index', 'New File Name')
 		if($zip_p->renameIndex($index,$newname)) {
 			return ('rname_ok');
 		}
@@ -149,14 +167,13 @@ if($zip->open($Zip_path) == 'TRUE') {
 		};
 	};
 
-	function ZipCreateDir($zip_p,$dir_path) {//Create dir inside zip using ZipCreateDir('Zip Path','Folder Path')
+	function ZipCreateDir($zip_p,$dir_path) {//Create dir inside zip using ZipCreateDir('Zip array','Folder Path')
 		if($zip_p->addEmptyDir($dir_path)) {
 			return('c_dir_ok');
 		} 
 		else {
 			return ('c_dir_fail');
 		};
-
 	};
 
 	switch($cmd) {
@@ -177,7 +194,7 @@ if($zip->open($Zip_path) == 'TRUE') {
 
 		case 'a_files':
 			foreach ($a_files_path as $key => $value) {
-				echo ZipAddFileFolders($zip,$key,$value)
+				Print_r(ZipAddFileFolders($zip,$key,$value));
 			};
 			break;
 	};
@@ -186,39 +203,39 @@ if($zip->open($Zip_path) == 'TRUE') {
 else {
 	switch($zip->open($ZipFileName)) {
 		case ZipArchive::ER_EXISTS: 
-			$ErrMsg = "ER_EXISTS";//File already exists.
+			$ErrMsg = 'ER_EXISTS';//File already exists.
 			break;
 
 		case ZipArchive::ER_INCONS: 
-			$ErrMsg = "ER_INCONS";//Zip archive inconsistent.
+			$ErrMsg = 'ER_INCONS';//Zip archive inconsistent.
 			break;
                 
 		case ZipArchive::ER_MEMORY: 
-			$ErrMsg = "ER_MEMORY";//Malloc failure.
+			$ErrMsg = 'ER_MEMORY';//Malloc failure.
 			break;
                 
 		case ZipArchive::ER_NOENT: 
-			$ErrMsg = "ER_NOENT";//No such file.
+			$ErrMsg = 'ER_NOENT';//No such file.
 			break;
                 
 		case ZipArchive::ER_NOZIP: 
-			$ErrMsg = "ER_NOZIP";//Not a zip archive.
+			$ErrMsg = 'ER_NOZIP';//Not a zip archive.
 			break;
                 
 		case ZipArchive::ER_OPEN: 
-			$ErrMsg = "ER_OPEN";//Can't open file.
+			$ErrMsg = 'ER_OPEN';//Can't open file.
 			break;
                 
 		case ZipArchive::ER_READ: 
-			$ErrMsg = "ER_READ";//Read error.
+			$ErrMsg = 'ER_READ';//Read error.
 			break;
                 
 		case ZipArchive::ER_SEEK: 
-			$ErrMsg = "ER_SEEK";//Seek error.
+			$ErrMsg = 'ER_SEEK';//Seek error.
 			break;
             
 		default: 
-			$ErrMsg = "Unknow_(Code:".$rOpen.")";
+			$ErrMsg = 'Unknow_(Code:'.$rOpen.')';
 			break;
 	}
 	die( 'ZipArchive_Error:'.$ErrMsg);
