@@ -7,7 +7,7 @@ $cmd='get';//'get','rname','del','open','c_dir','a_files'
 $index=array('null' => 'New folder/') ;//calling indexs as array(as 'index' => 'selected index file or folder path including name that selected') if it not define as index leave it 'null'
 $c_dir_path='.trash/159';//path to create folder includng that wanted to create folder's name
 $a_files_path = array('New folder/'=>'C:\wamp64\www\files\New folder');//give you wanted to add files or folders path list to zip (as path inside zip => real path to file)
-$rname='ee';//new file name for rename & folder rename immposible directly
+$rname='ee';//as ('New Name'). Folder rename immposible directly so I implemented diffeent method. 
 
 $zip = new ZipArchive;
 
@@ -171,8 +171,32 @@ if($zip->open($Zip_path) == 'TRUE') {
 		};
 	};
 
-	function ZipRenameFile($zip_p,$index,$oldname,$newname) {//rename using Ziprenamefile('Zip array,'File index', 'New File Name')
-		if($zip_p->renameIndex($index,$newname)) {
+	function ZipRenameFile($zip_p,$indx,$oldpath,$newname) {//rename using Ziprenamefile('Zip array,'File index', 'New File Name')
+		
+		if (is_dir($oldpath)) {
+			for ($i=0; !empty($zip_p->statIndex($i)['name']); $i++) {
+				if (strpos($zip_p->statIndex($i)['name'],$oldpath) === 0) {
+					$index_list[]=$i;
+				};
+			};
+			if(pathinfo($oldpath,PATHINFO_DIRNAME) != chr(92)) {
+				if (is_numeric($indx)) {
+					$zip_p->deleteIndex($indx);
+				};
+				ZipCreateDir($zip_p,pathinfo($oldpath,PATHINFO_DIRNAME).'/'.$newname);			
+			};
+			
+			
+			for ($i=0; !empty($index_list[$i]); $i++) {
+				if (is_dir($zip_p->statIndex($index_list[$i])['name'])) {
+					
+				};
+				
+			};
+		};
+		
+		
+		if($zip_p->renameIndex($indx,$newname)) {
 			return ('rname_ok');
 		}
 		else {
