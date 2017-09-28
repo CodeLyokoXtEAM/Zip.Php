@@ -4,7 +4,7 @@
 $Zip_path='files.zip';//zip file path
 $pass='';//user password. Its still not working correctly
 $cmd='get';//'get','rname','del','open','c_dir','a_files'
-$index=array('15' => 'New folder/New folder/New folder/New Text Document.txt') ;//calling indexs as array(as 'index' => 'selected index file or folder path including name that selected') if it not define as index leave it 'null'
+$index=array('null' => 'New folder/') ;//calling indexs as array(as 'index' => 'selected index file or folder path including name that selected') if it not define as index leave it 'null'
 $c_dir_path='.trash/159';//path to create folder includng that wanted to create folder's name
 $a_files_path = array('New folder/'=>'C:\wamp64\www\files\New folder');//give you wanted to add files or folders path list to zip (as path inside zip => real path to file)
 $rname='ee';//new file name for rename & folder rename immposible directly
@@ -134,7 +134,7 @@ if($zip->open($Zip_path) == 'TRUE') {
 
 
 	function ZipDeleteFileFolder($zip_p,$indx,$path) {//delete file or folder using ZipDeleteFileFolder('Zip array','File/Folder index','File/Folder path including name that wanted to delete')
-		$sus_sub=0;
+		$sus_sub='0';
 		$sus_selected = '0';
 		if (is_numeric($indx)) {
 			if ($zip_p->deleteIndex($indx)) {
@@ -144,16 +144,17 @@ if($zip->open($Zip_path) == 'TRUE') {
 				$sus_selected = '0';
 			};			
 		};
-		if(pathinfo($path,PATHINFO_DIRNAME) || chr(92)) {
+		if(pathinfo($path,PATHINFO_DIRNAME) != chr(92)) {
 			ZipCreateDir($zip_p,pathinfo($path,PATHINFO_DIRNAME));
 		};
 		if (is_dir($path)) {
 			for ($i=0; !empty($zip_p->statIndex($i)['name']); $i++) {
-				if (strpos($zip_p->statIndex($i)['name'],$path) !== false) {
+				if (strpos($zip_p->statIndex($i)['name'],$path) === 0) {
 					$index_list[]=$i;
 				};
 			};
 			for ($i=0; !empty($index_list[$i]); $i++) {
+				
 				if($zip_p->deleteIndex($index_list[$i])) {
 					$sus_sub=1;
 				}
@@ -162,11 +163,11 @@ if($zip->open($Zip_path) == 'TRUE') {
 				};
 			};
 		};
-		if($sus_sub=='1' or $sus_sub== '1') {
+		if($sus_sub=='1' or $sus_selected== '1') {
 			return ('ok_del');
 		}
 		else {
-			retun('fail_del');
+			return('fail_del');
 		};
 	};
 
