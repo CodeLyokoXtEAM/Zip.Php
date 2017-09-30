@@ -3,11 +3,11 @@
 //request data
 $Zip_path='files.zip';//zip file path
 $pass='';//user password. Its still not working correctly
-$cmd='get';//'get','rname','del','open','c_dir','a_files'
-$index=array('9' => 'files/2.php') ;//calling indexs as array(as 'index' => 'selected index file or folder path including name that selected') if it not defineded index leave it as 'null'
+$cmd='get';//'get','rename','del','open','c_dir','a_files'
+$index=array('null' => 'New folder/.trash/') ;//calling indexs as array(as 'index' => 'selected index file or folder path including name that selected') if it not defineded index leave it as 'null'. also if You reffering folder path, You must end path using '/' 
 $c_dir_path='.trash/159/';//path to create folder includng that wanted to create folder's name
 $a_files_path = array('New folder/'=>'C:\wamp64\www\files\New folder');//give you wanted to add files or folders path list to zip (as path inside zip => real path to file)
-$rname='ggfggjgj.txt';//as ('New Name'). Folder rename immposible directly so I implemented diffeent method. 
+$rname='Newfolder';//as ('New Name'). Folder rename immposible directly so I implemented diffeent method. 
 
 $zip = new ZipArchive;
 
@@ -153,7 +153,6 @@ if($zip->open($Zip_path) == 'TRUE') {
 					$index_list[]=$i;
 				};
 			};
-
 			for ($i=0; !empty($index_list[$i]); $i++) {
 				
 				if($zip_p->deleteIndex($index_list[$i])) {
@@ -171,70 +170,84 @@ if($zip->open($Zip_path) == 'TRUE') {
 			return('fail_del');
 		};
 	};
-
-	function ZipRenameFile($zip_p,$indx,$oldpath,$newname) {//rename using Ziprenamefile('Zip array,'File index', 'New File Name')
+	
+	function ZipRenameFile($zip_p,$indx,$oldpath,$newname) {//rename using Ziprenamefile('Zip array,'File index', 'oldpath', 'New File Name')
 		
-		if(substr($oldpath, -1) == '/') {
-			for ($i=0; !empty($zip_p->statIndex($i)['name']); $i++) {
+		$index_list=array();
+		$op='';
+		$Cnt=0;
+		$onout='';
+		$od=pathinfo($oldpath,PATHINFO_DIRNAME);
+	
+		if(substr($oldpath, -1) == '/'){
+			for ($i=0; isset($zip_p->statIndex($i)['name']); $i++) {
+				if ($od == '.') {
+					if(strpos($zip_p->statIndex($i)['name'],$newname.'/') === 0) {
+						return ('already_exsist');
+					};
+				}
+				else {
+					if(strpos($zip_p->statIndex($i)['name'],$od.'/'.$newname.'/') === 0) {
+						return ('already_exsist');
+					};
+				};		
 				if (strpos($zip_p->statIndex($i)['name'],$oldpath) === 0) {
 					$index_list[]=$i;
 				};
 			};
-			
-			if(pathinfo($oldpath,PATHINFO_DIRNAME) != '.') {
-				if (is_numeric($indx)) {
-					$zip_p->deleteIndex($indx);
-				};
-				ZipCreateDir($zip_p,pathinfo($oldpath,PATHINFO_DIRNAME).'/'.$newname.'/');			
-			}
-			else {
-				ZipCreateDir($zip_p,$newname.'/');
-			};
-			
-			
-
-			$od=pathinfo($oldpath,PATHINFO_DIRNAME);
-
-
-			for ($i=0; !empty($index_list[$i]); $i++) {
-				$op=$zip_p->statIndex($index_list[$i])['name'];
-
-				
-				if(substr(($zip_p->statIndex($index_list[$i])['name']), -1) =='/') {
-					if ($od == '.') {
-						$op = preg_replace('|'.$oldpath.'|', $newname.'/', $op, 1);
-						$zip_p->deleteIndex($index_list[$i]);
-						ZipCreateDir($zip_p,$op);
-					}
-					else {
-						$op = preg_replace('|'.$oldpath.'|', $od.'/'.$newname.'/', $op, 1);
-						$zip_p->deleteIndex($index_list[$i]);
-						ZipCreateDir($zip_p,$op);
-					};
+			for ($i=0; isset($index_list[$i]); $i++) {
+			$op=($zip_p->statIndex($index_list[$i])['name']);
+			if (substr($op, -1) == '/'){
+				if ($od == '.') {
+					$op =preg_replace('|'.$oldpath.'|', $newname.'/', $op, 1);
 				}
 				else {
-
-					if(pathinfo($oldpath,PATHINFO_DIRNAME) != '.'){
-						$op = preg_replace('|'.$oldpath.'|', $od.'/'.$newname.'/', $op, 1);
-					} 
-					else {
-						if ($od == '.') {
-							$op = preg_replace('|'.$oldpath.'|', $newname.'/', $op, 1);
-						}
-						else {
-							$op = preg_replace('|'.$oldpath.'|', '/'.$newname.'/', $op, 1);
-						};
-					};
-					
-					$zip_p->renameIndex($index_list[$i],$op);
+					$op = preg_replace('|'.$oldpath.'|', $od.'/'.$newname.'/', $op, 1);
 				};
-				
+				if ($zip_p->renameIndex($index_list[$i],$op)) {
+					$Cnt=$Cnt+1;
+				};
+			}
+			else {
+				if ($od == '.') {
+					$op = preg_replace('|'.$oldpath.'|', $newname.'/', $op, 1);
+				}
+				else {
+					$op = preg_replace('|'.$oldpath.'|', $od.'/'.$newname.'/', $op, 1);
+				};
+				if($zip_p->renameIndex($index_list[$i],$op) == True) {
+					$Cnt=$Cnt+1;
+				};
 			};
+		};
+		if ($Cnt==count($index_list)){
+			return('ok_rename');
 		}
 		else {
-			$zip_p->renameIndex($indx,pathinfo($oldpath,PATHINFO_DIRNAME).'/'.$newname);
+			if ($Cnt != 0) {
+				return('ok_fail_rename');	
+			};
+			return('fail_rename');
+		};
+	}
+	else {
+		
+		if($od == '.'){
+			$onout='';
+		}
+		else {
+			$onout=$od.'/';
+		};
+		if($zip_p->renameIndex($indx,$onout.$newname) == True) {
+			return('ok_rename');
+		}
+		else {
+			return('already_exsist');
 		};
 	};
+	
+};
+
 
 	function ZipCreateDir($zip_p,$dir_path) {//Create dir inside zip using ZipCreateDir('Zip array','Folder Path')
 		if($zip_p->addEmptyDir($dir_path)) {
@@ -255,7 +268,7 @@ if($zip->open($Zip_path) == 'TRUE') {
 				echo ZipDeleteFileFolder($zip,$value,$key);
 			};
 			break;
-		case 'rname':
+		case 'rename':
 			foreach ($index as $value => $key) {
 				echo ZipRenameFile($zip,$value,$key,$rname);
 			};
