@@ -3,8 +3,8 @@
 //request data
 $Zip_path='files.zip';//zip file path
 $pass='';//user password. Its still not working correctly
-$cmd='get';//'get','rename','del','open','c_dir','a_files'
-$index=array('18' => 'New folder/files.zip') ;//calling indexs as array(as 'index' => 'selected index file or folder path including name that selected') if it not defineded index leave it as 'null'. also if You reffering folder path, You must end path using '/' 
+$cmd='open';//'get','rename','del','open','create','add'
+$index=array('14' => 'files/New folder/files.zip') ;//calling indexs as array(as 'index' => 'selected index file or folder path including name that selected') if it not defineded index leave it as 'null'. also if You reffering folder path, You must end path using '/' 
 $c_dir_path='.trash/159/';//path to create folder includng that wanted to create folder's name
 $a_files_path = array('New folder/'=>'C:\wamp64\www\files\New folder');//give you wanted to add files or folders path list to zip (as path inside zip => real path to file)
 $rname='Newfolder';//as ('New Name'). Folder rename immposible directly so I implemented diffeent method. 
@@ -15,95 +15,7 @@ if($zip->open($Zip_path) == 'TRUE') {
 
 	$zip->setPassword($pass);
 
-	if($cmd=='open') {
-
-		$contents='';
-		$fp = $zip->getStream($zip->statIndex($index)['name']);
-		if(!$fp) exit('failed\n');
-
-		while (!feof($fp)) {
-			$contents .= fread($fp, 2);
-		};
-
-		fclose($fp);
-		file_put_contents('t',$contents);
-		$filedetil=explode('/',strtolower($zip->statIndex($index)['name']));
-
-		$filedetil=explode('.',end($filedetil));
-
-		$mime_types = array(
-			'txt' => 'text/plain',
-			'htm' => 'text/html',
-			'html' => 'text/html',
-			'php' => 'text/html',
-			'css' => 'text/css',
-			'js' => 'application/javascript',
-			'json' => 'application/json',
-			'xml' => 'application/xml',
-			'swf' => 'application/x-shockwave-flash',
-			'flv' => 'video/x-flv',
-
-			// images
-			'png' => 'image/png',
-			'jpe' => 'image/jpeg',
-			'jpeg' => 'image/jpeg',
-			'jpg' => 'image/jpeg',
-			'gif' => 'image/gif',
-			'bmp' => 'image/bmp',
-			'ico' => 'image/vnd.microsoft.icon',
-			'tiff' => 'image/tiff',
-			'tif' => 'image/tiff',
-			'svg' => 'image/svg+xml',
-			'svgz' => 'image/svg+xml',
-
-			// archives
-			'zip' => 'application/zip',
-			'rar' => 'application/x-rar-compressed',
-			'exe' => 'application/x-msdownload',
-			'msi' => 'application/x-msdownload',
-			'cab' => 'application/vnd.ms-cab-compressed',
-
-			// audio/video
-			'mp3' => 'audio/mpeg',
-			'qt' => 'video/quicktime',
-			'mov' => 'video/quicktime',
-
-			// adobe
-			'pdf' => 'application/pdf',
-			'psd' => 'image/vnd.adobe.photoshop',
-			'ai' => 'application/postscript',
-			'eps' => 'application/postscript',
-			'ps' => 'application/postscript',
-
-			// ms office
-			'doc' => 'application/msword',
-			'rtf' => 'application/rtf',
-			'xls' => 'application/vnd.ms-excel',
-			'ppt' => 'application/vnd.ms-powerpoint',
-
-			// open office
-			'odt' => 'application/vnd.oasis.opendocument.text',
-			'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
-		);
-
-		if (array_key_exists(end($filedetil), $mime_types)) {
-			$mime=$mime_types[end($filedetil)];
-		}
-		else {
-			$mime= 'application/octet-stream';
-		};
-
-	header('Content-type: '.$mime);
-	echo ($contents);
-
-	//$file=fopen(end($filedetil),'w');
-	//$temp = tmpfile();
-	//fwrite($temp ,$contents);
-	//fseek($temp,0);
-	//echo fread($temp,1024);
-	//fclose($file);
-
-	};
+	
 
 	if ($cmd=='get') {
 		for ($i=0; !empty($zip->statIndex($i)['name']); $i++) {//generating list (including identification index, name or path, size, crc, mtime, compares_Size, comp_method)of folders and files inside the zip
@@ -130,8 +42,83 @@ if($zip->open($Zip_path) == 'TRUE') {
 			$zip_p->addFile($real_p,$file_p);
 		};
 	};
+	
+	
 
-
+	function ZipOpenFile($zip_p,$indx,$path) {
+		
+		if (!is_numeric($indx)) {
+			retun('invalid_index');
+		};
+		$contents='';
+		$fp = $zip_p->getStream($zip_p->statIndex($indx)['name']);
+		if(!$fp) exit('failed\n');
+		while (!feof($fp)) {
+			$contents .= fread($fp, 2);
+		};
+		fclose($fp);
+		file_put_contents('t',$contents);
+		$file_mime=pathinfo(($zip_p->statIndex($indx)['name']),PATHINFO_EXTENSION);
+		$file_name=pathinfo(($zip_p->statIndex($indx)['name']),PATHINFO_BASENAME);
+		$mime_types = array(
+			'txt' => 'text/plain',
+			'htm' => 'text/html',
+			'html' => 'text/html',
+			'php' => 'text/html',
+			'css' => 'text/css',
+			'js' => 'application/javascript',
+			'json' => 'application/json',
+			'xml' => 'application/xml',
+			'swf' => 'application/x-shockwave-flash',
+			'flv' => 'video/x-flv',
+			// images
+			'png' => 'image/png',
+			'jpe' => 'image/jpeg',
+			'jpeg' => 'image/jpeg',
+			'jpg' => 'image/jpeg',
+			'gif' => 'image/gif',
+			'bmp' => 'image/bmp',
+			'ico' => 'image/vnd.microsoft.icon',
+			'tiff' => 'image/tiff',
+			'tif' => 'image/tiff',
+			'svg' => 'image/svg+xml',
+			'svgz' => 'image/svg+xml',
+			// archives
+			'zip' => 'application/zip',
+			'rar' => 'application/x-rar-compressed',
+			'exe' => 'application/x-msdownload',
+			'msi' => 'application/x-msdownload',
+			'cab' => 'application/vnd.ms-cab-compressed',
+			// audio/video
+			'mp3' => 'audio/mpeg',
+			'qt' => 'video/quicktime',
+			'mov' => 'video/quicktime',
+			// adobe
+			'pdf' => 'application/pdf',
+			'psd' => 'image/vnd.adobe.photoshop',
+			'ai' => 'application/postscript',
+			'eps' => 'application/postscript',
+			'ps' => 'application/postscript',
+			// ms office
+			'doc' => 'application/msword',
+			'rtf' => 'application/rtf',
+			'xls' => 'application/vnd.ms-excel',
+			'ppt' => 'application/vnd.ms-powerpoint',
+			// open office
+			'odt' => 'application/vnd.oasis.opendocument.text',
+			'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
+		);
+		if (array_key_exists((strtolower($file_mime)), $mime_types)) {
+			$mime=$mime_types[(strtolower($file_mime))];
+		}
+		else {
+			$mime= 'application/octet-stream';
+		};
+		header('Content-type: '.$mime);
+		header('Content-Disposition: attachment; filename='.$file_name);
+		return ($contents);
+	};
+	
 	function ZipDeleteFileFolder($zip_p,$indx,$path) {//delete file or folder using ZipDeleteFileFolder('Zip array','File/Folder index','File/Folder path including name that wanted to delete')
 		$index_list=array();
 		$od=pathinfo($path,PATHINFO_DIRNAME);
@@ -178,11 +165,6 @@ if($zip->open($Zip_path) == 'TRUE') {
 			};
 			if ($zip_p->deleteIndex($indx)) {
 				if ($od != '.') {
-					for ($i=0; isset($zip_p->statIndex[$i]['name']); $i++) {
-						if (strpos(($zip_p->statIndex[$i]['name']),$od.'/') === 0) {
-							return('ok_delete');
-						};
-					};
 					$zip_p->addEmptyDir($od.'/');
 				};
 				return('ok_delete');
@@ -282,7 +264,7 @@ if($zip->open($Zip_path) == 'TRUE') {
 	};
 	
 	switch($cmd) {
-		case 'c_dir':
+		case 'create':
 			echo ZipCreateDir($zip,$c_dir_path);
 			break;
 
@@ -296,12 +278,19 @@ if($zip->open($Zip_path) == 'TRUE') {
 				echo ZipRenameFile($zip,$value,$key,$rname);
 			};
 			break;
-
-		case 'a_files':
+			
+		case 'open':
+			foreach ($index as $value => $key) {
+				echo ZipOpenFile($zip,$value,$key);
+			};
+			break;
+			
+		case 'add':
 			foreach ($a_files_path as $key => $value) {
 				Print_r(ZipAddFileFolders($zip,$key,$value));
 			};
 			break;
+			
 	};
 
 }
