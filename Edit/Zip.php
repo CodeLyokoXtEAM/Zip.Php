@@ -1,17 +1,18 @@
 <?php
 
 //request data
-$Zip_path='files.zip';//zip file path
-$pass='';//user password. Its still not working correctly
-$cmd='open';//'get','rename','del','open','create','add'
-$index=array('14' => 'files/New folder/files.zip') ;//calling indexs as array(as 'index' => 'selected index file or folder path including name that selected') if it not defineded index leave it as 'null'. also if You reffering folder path, You must end path using '/' 
+$zip_path='C:/wamp64/www/files/files.zip';//zip file path
+$pass='123';//user password. Its can only use for extract ZipCrypto Encryption zip
+$cmd='extract';//'get','rename','delete','open','create','add', 'extract'
+$index=array('12' => 'files/New folder/') ;//calling indexs as array(as 'index' => 'selected index file or folder path including name that selected') if it not defineded index leave it as 'null'. also if You reffering folder path, You must end path using '/' 
 $c_dir_path='.trash/159/';//path to create folder includng that wanted to create folder's name
-$a_files_path = array('New folder/'=>'C:\wamp64\www\files\New folder');//give you wanted to add files or folders path list to zip (as path inside zip => real path to file)
-$rname='Newfolder';//as ('New Name'). Folder rename immposible directly so I implemented diffeent method. 
+$a_files_path = array('New folder/'=>'C:/wamp64/www/files/New folder/');//give you wanted to add files or folders path list to zip (as path inside zip => real path to file)
+$rname='Newfolder';//as ('New Name'). Folder rename immposible directly. so I implemented diffeent method. 
+$extractpath='C:/wamp64/www/files/extract/';
 
 $zip = new ZipArchive;
 
-if($zip->open($Zip_path) == 'TRUE') {
+if($zip->open($zip_path) == 'TRUE') {
 
 	$zip->setPassword($pass);
 
@@ -32,27 +33,54 @@ if($zip->open($Zip_path) == 'TRUE') {
 
 
 
-	function ZipAddFileFolders($zip_p,$file_p,$real_p) {
-		if (is_dir($real_p)) {
-			print_r(scandir($real_p));
-
-
-		}
-		else {
-			$zip_p->addFile($real_p,$file_p);
-		};
+	function ZipAddFileFolders($zip_p,$file_p,$real_p) {// this is not compleated
+			$zip_p->add($real_p,$file_p);
 	};
 	
 	
+	function ZipExtract($zip_p,$indx,$path,$extpath) {
+		$od=pathinfo($path,PATHINFO_DIRNAME);
+		if ($indx=='all') {
+			if($zip_p->extractTo($extpath)) {
+				return('ok_extract');
+			}
+			else {
+				return('fail_extract');
+			};
+		};
 
-	function ZipOpenFile($zip_p,$indx,$path) {
+		if (pathinfo($path,PATHINFO_DIRNAME) != '.') {
+			$op =$extpath.preg_replace('|'.$od.'/'.'|', '', $path, 1);
+		};
+
+		if(substr($path, -1) == '/') {
+			for ($i=0; isset($zip_p->statIndex($i)['name']); $i++) {
+				if (strpos(($zip_p->statIndex($i)['name']),$path) === 0) {
+					$zip_p->extractTo($extpath,$zip_p->statIndex($i)['name']);
+				};
+			};
+		}
+		else {
+			if(!is_numeric($indx)) {
+				return('invalid_index');
+			};
+			$zip_p->extractTo($extpath,$zip_p->statIndex($indx)['name']);
+		};
+	};
+	
+	function ZipOpenFile($zip_p,$indx) {
 		
 		if (!is_numeric($indx)) {
-			retun('invalid_index');
+			return('invalid_index');
+		};
+		if(substr(($zip_p->statIndex($indx)['name']), -1) == '/') {
+			return('fail_open_not_file');
 		};
 		$contents='';
 		$fp = $zip_p->getStream($zip_p->statIndex($indx)['name']);
-		if(!$fp) exit('failed\n');
+		if(!$fp) {
+			return('fail_open_corrupted_encrypted');
+		};
 		while (!feof($fp)) {
 			$contents .= fread($fp, 2);
 		};
@@ -187,12 +215,12 @@ if($zip->open($Zip_path) == 'TRUE') {
 			for ($i=0; isset($zip_p->statIndex($i)['name']); $i++) {
 				if ($od == '.') {
 					if(strpos(($zip_p->statIndex($i)['name']),$newname.'/') === 0) {
-						return ('already_exsist');
+						return ('already_exsist_folder');
 					};
 				}
 				else {
 					if(strpos(($zip_p->statIndex($i)['name']),$od.'/'.$newname.'/') === 0) {
-						return ('already_exsist');
+						return ('already_exsist_folder');
 					};
 				};
 				if (strpos(($zip_p->statIndex($i)['name']),$oldpath) === 0) {
@@ -248,7 +276,7 @@ if($zip->open($Zip_path) == 'TRUE') {
 				return('ok_rename');
 			}
 			else {
-				return('already_exsist');
+				return('already_exsist_file');
 			};
 		};
 	};
@@ -264,11 +292,15 @@ if($zip->open($Zip_path) == 'TRUE') {
 	};
 	
 	switch($cmd) {
+		case 'extract':
+			foreach ($index as $value => $key) {
+				echo ZipExtract($zip,$value,$key,$extractpath);
+			};
+			break;
 		case 'create':
 			echo ZipCreateDir($zip,$c_dir_path);
 			break;
-
-		case 'del':
+		case 'delete':
 			foreach ($index as $value => $key) {
 				echo ZipDeleteFileFolder($zip,$value,$key);
 			};
@@ -281,13 +313,13 @@ if($zip->open($Zip_path) == 'TRUE') {
 			
 		case 'open':
 			foreach ($index as $value => $key) {
-				echo ZipOpenFile($zip,$value,$key);
+				echo ZipOpenFile($zip,$value);
 			};
 			break;
 			
 		case 'add':
 			foreach ($a_files_path as $key => $value) {
-				Print_r(ZipAddFileFolders($zip,$key,$value));
+				ZipAddFileFolders($zip,$key,$value);
 			};
 			break;
 			
